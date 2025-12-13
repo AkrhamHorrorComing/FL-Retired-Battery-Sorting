@@ -1,4 +1,4 @@
-# 联邦学习电池分类系统 (Federated Learning Battery Classification System)
+# Second-level Heterogenous Retired Battery Chemistry Identification using Pulse Test Enabled Federated Learning with Hard Privacy Guarantee
 
 [![Python](https://img.shields.io/badge/Python-3.7%2B-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
