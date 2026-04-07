@@ -1,4 +1,4 @@
-#创建client model，每个client model有不定type电池，每类电池至少有minisize=5块。
+# Create client models, each client model has a variable number of battery types, each type has at least minisize=5 batteries.
 import os.path
 
 import pandas as pd
@@ -10,8 +10,8 @@ def _get_random_partitions_with_min(total_sum, num_bins, min_size, rng):
 
     if total_sum < num_bins * min_size:
         raise ValueError(
-            f"总数 {total_sum} 不足以满足 {num_bins} 份每份最少 {min_size} 的要求。"
-            f"至少需要 {num_bins * min_size}。"
+            f"Total sum {total_sum} is insufficient for {num_bins} partitions with minimum {min_size} each. "
+            f"At least {num_bins * min_size} required."
         )
 
     base_partitions = np.full(num_bins, min_size, dtype=int)
@@ -34,9 +34,9 @@ def _get_random_partitions_with_min(total_sum, num_bins, min_size, rng):
 
 # def partition_random_quantities(df_data, num_clients=5, mini_type=2,max_type=5, random_seed=42):
 #     """
-#     遵循“先选type再选数据”的逻辑，以随机数量将数据集完全分配。
+#     Follow the logic of 'select types first, then data', distributing the dataset completely with random quantities.
 #     """
-#     print("--- 开始按类型进行“随机数量”的数据分配 ---")
+#     print("--- Start data distribution by type with 'random quantities' ---")
 #     rng = np.random.default_rng(random_seed)
 #
 #     all_types = df_data["type"].unique()
@@ -51,11 +51,11 @@ def _get_random_partitions_with_min(total_sum, num_bins, min_size, rng):
 #         os.makedirs("client_model/"+str(random_seed))
 #
 #     with open("client_model/"+str(random_seed)+"/logging.txt", 'a', encoding='utf-8') as f:
-#         print("--- 分配计划 (每个客户端将接收的类型) ---",file=f)
+#         print("--- Distribution plan (types each client will receive) ---",file=f)
 #         for i, types in enumerate(client_type_map):
-#             print(f"客户端 {i}: 将接收 {len(types)} 种类型 -> {sorted(types)}",file=f)
+#             print(f"Client {i}: will receive {len(types)} types -> {sorted(types)}",file=f)
 #
-#     # 步骤 2: 按计划分配数据
+#     # Step 2: Distribute data according to plan
 #     final_clients_data = [{} for _ in range(num_clients)]
 #
 #     final_nums = [[] for _ in range(num_clients)]
@@ -86,20 +86,20 @@ def _get_random_partitions_with_min(total_sum, num_bins, min_size, rng):
 #             current_pos += quantity
 #     sum_length = sum([len(l) for l in final_nums])
 #     with open("client_model/" + str(random_seed) + "/logging.txt", 'a', encoding='utf-8') as f:
-#         print(f"分配完成，共{sum_length}/{len(df_data)}个数据",file=f)
+#         print(f"Distribution complete, {sum_length}/{len(df_data)} data points",file=f)
 #     if sum_length != len(df_data):
-#         raise ValueError("分配的数据数量与总数据数量不一致！")
+#         raise ValueError("Distributed data count does not match total data count!")
 #     return final_clients_data, final_nums
 def partition_random_quantities(df_data, num_clients=5, mini_type=2, max_type=5, random_seed=42):
     """
-    改进版本：确保所有数据都被分配，固定最小分配量为5
+    Improved version: ensures all data is distributed, fixed minimum allocation is 5
     """
-    print("--- 开始按类型进行数据分配 ---")
+    print("--- Start data distribution by type ---")
     rng = np.random.default_rng(random_seed)
 
     all_types = df_data["type"].unique()
 
-    # 步骤 1: 为每个客户端分配类型
+    # Step 1: Assign types to each client
     client_type_map = []
     for _ in range(num_clients):
         num_types = rng.integers(mini_type, max_type + 1)
@@ -110,15 +110,15 @@ def partition_random_quantities(df_data, num_clients=5, mini_type=2, max_type=5,
         os.makedirs("client_model/" + str(random_seed))
 
     with open("client_model/" + str(random_seed) + "/logging.txt", 'a', encoding='utf-8') as f:
-        print("--- 分配计划 (每个客户端将接收的类型) ---", file=f)
+        print("--- Distribution plan (types each client will receive) ---", file=f)
         for i, types in enumerate(client_type_map):
-            print(f"客户端 {i}: 将接收 {len(types)} 种类型 -> {sorted(types)}", file=f)
+            print(f"Client {i}: will receive {len(types)} types -> {sorted(types)}", file=f)
 
-    # 步骤 2: 按计划分配数据
+    # Step 2: Distribute data according to plan
     final_clients_data = [{} for _ in range(num_clients)]
     final_nums = [[] for _ in range(num_clients)]
 
-    # 记录分配统计
+    # Record distribution statistics
     allocation_stats = {}
     total_allocated = 0
 
@@ -128,37 +128,37 @@ def partition_random_quantities(df_data, num_clients=5, mini_type=2, max_type=5,
         ]
 
         if not eligible_clients_indices:
-            print(f"警告: 类型 {battery_type} 没有被任何客户端选择，将随机分配给一个客户端")
-            # 随机选择一个客户端接收这个类型的数据
+            print(f"Warning: Type {battery_type} was not selected by any client, will be randomly assigned to one client")
+            # Randomly select a client to receive this type's data
             eligible_clients_indices = [rng.integers(0, num_clients)]
 
         data_for_type = df_data[df_data["type"] == battery_type]["nums"].values
-        #对应type的电池ID
+        # Battery IDs for the corresponding type
         rng.shuffle(data_for_type)
 
         num_data_points = len(data_for_type)
         num_eligible_clients = len(eligible_clients_indices)
 
-        # 记录统计信息
+        # Record statistics
         allocation_stats[battery_type] = {
             'data_points': num_data_points,
             'eligible_clients': num_eligible_clients
         }
 
-        # 固定最小分配量为5
+        # Fixed minimum allocation of 5
         fixed_min_size = 5
 
-        # 检查数据量是否足够
+        # Check if data quantity is sufficient
         if num_data_points < num_eligible_clients * fixed_min_size:
-            print(f"警告: 类型 {battery_type} 数据量不足 ({num_data_points} < {num_eligible_clients * fixed_min_size})")
-            # 减少有资格的客户端数量以满足最小分配要求
+            print(f"Warning: Type {battery_type} has insufficient data ({num_data_points} < {num_eligible_clients * fixed_min_size})")
+            # Reduce eligible client count to meet minimum allocation requirements
             max_possible_clients = num_data_points // fixed_min_size
             if max_possible_clients == 0:
-                # 如果连一个客户端的最小要求都无法满足，选择数据量最多的客户端
-                print(f"类型 {battery_type} 数据量过少，只分配给一个客户端")
+                # If even one client's minimum requirement cannot be met, select the client with the most data
+                print(f"Type {battery_type} has too little data, only assigned to one client")
                 eligible_clients_indices = [rng.choice(eligible_clients_indices)]
             else:
-                # 随机选择部分客户端
+                # Randomly select some clients
                 eligible_clients_indices = rng.choice(
                     eligible_clients_indices,
                     size=max_possible_clients,
@@ -172,12 +172,12 @@ def partition_random_quantities(df_data, num_clients=5, mini_type=2, max_type=5,
         )
 
 
-        # 执行数据分配
+        # Execute data distribution
         current_pos = 0
         for i, client_idx in enumerate(eligible_clients_indices):
             quantity = random_quantities[i]
             if current_pos + quantity > len(data_for_type):
-                # 防止数组越界
+                # Prevent array out-of-bounds
                 quantity = len(data_for_type) - current_pos
             if quantity > 0:
                 data_slice = data_for_type[current_pos: current_pos + quantity]
@@ -190,10 +190,10 @@ def partition_random_quantities(df_data, num_clients=5, mini_type=2, max_type=5,
 
         total_allocated += current_pos
 
-        # 检查是否有剩余数据未分配
+        # Check if there is remaining unassigned data
         if current_pos < len(data_for_type):
-            print(f"警告: 类型 {battery_type} 有 {len(data_for_type) - current_pos} 个数据未分配")
-            # 将剩余数据随机分配给有资格的客户端
+            print(f"Warning: Type {battery_type} has {len(data_for_type) - current_pos} unassigned data points")
+            # Distribute remaining data to eligible clients randomly
             remaining_data = data_for_type[current_pos:]
             for j, data_point in enumerate(remaining_data):
                 client_idx = eligible_clients_indices[j % len(eligible_clients_indices)]
@@ -204,28 +204,28 @@ def partition_random_quantities(df_data, num_clients=5, mini_type=2, max_type=5,
                 final_nums[client_idx].append(data_point)
                 total_allocated += 1
 
-    # 最终验证和调试信息
+    # Final validation and debug information
     sum_length = sum([len(l) for l in final_nums])
     total_data_points = len(df_data)
 
     with open("client_model/" + str(random_seed) + "/logging.txt", 'a', encoding='utf-8') as f:
-        print(f"分配完成，共{sum_length}/{total_data_points}个数据", file=f)
-        print("分配统计:", file=f)
+        print(f"Distribution complete, {sum_length}/{total_data_points} data points", file=f)
+        print("Distribution statistics:", file=f)
         for type_name, stats in allocation_stats.items():
-            print(f"类型 {type_name}: {stats['data_points']} 个数据 -> {stats['eligible_clients']} 个客户端", file=f)
+            print(f"Type {type_name}: {stats['data_points']} data points -> {stats['eligible_clients']} clients", file=f)
 
-        # 检查每个客户端的数据量
+        # Check each client's data quantity
         for i, client_data in enumerate(final_nums):
-            print(f"客户端 {i}: {len(client_data)} 个数据", file=f)
+            print(f"Client {i}: {len(client_data)} data points", file=f)
 
     if sum_length != total_data_points:
-        print(f"错误: 分配的数据数量 ({sum_length}) 与总数据数量 ({total_data_points}) 不一致！")
-        print("调试信息:")
-        print(f"总数据点数: {total_data_points}")
-        print(f"已分配数据点数: {sum_length}")
-        print(f"差异: {total_data_points - sum_length}")
+        print(f"Error: Distributed data count ({sum_length}) does not match total ({total_data_points})!")
+        print("Debug information:")
+        print(f"Total data points: {total_data_points}")
+        print(f"Allocated data points: {sum_length}")
+        print(f"Difference: {total_data_points - sum_length}")
 
-        # 检查哪些数据丢失了
+        # Check which data is missing
         original_data = set(df_data["nums"].values)
         allocated_data = set()
         for client_data in final_nums:
@@ -233,9 +233,9 @@ def partition_random_quantities(df_data, num_clients=5, mini_type=2, max_type=5,
 
         missing_data = original_data - allocated_data
         if missing_data:
-            print(f"丢失的数据: {len(missing_data)} 个")
+            print(f"Missing data: {len(missing_data)} points")
 
-        raise ValueError("分配的数据数量与总数据数量不一致！")
+        raise ValueError("Distributed data count does not match total data count!")
 
     return final_clients_data, final_nums
 
@@ -245,7 +245,7 @@ def plot_train_dataset(random_seed=42):
     condition = df["condition"].unique()
     import matplotlib.pyplot as plt
 
-    # 准备数据
+    # Prepare data
     conditions = []
     data_nums = []
     battery_nums = []
@@ -259,28 +259,28 @@ def plot_train_dataset(random_seed=42):
         battery_nums.append(battery_num)
         data_nums.append(data_num)
 
-    # 绘制柱状图
+    # Draw bar chart
     fig, ax = plt.subplots(2, 1, figsize=(10, 12))
 
-    # 第一个子图：数据数量
+    # First subplot: data count
     ax[0].bar(conditions, data_nums, color='skyblue', alpha=0.7)
     ax[0].set_ylim(0, max(data_nums) * 1.2)
     ax[0].set_title('Data Number by Condition')
     ax[0].set_xlabel('Condition')
     ax[0].set_xticklabels(conditions, rotation=45, ha='right')
     ax[0].set_ylabel('Data Number')
-    # 在柱子上添加数值标签
+    # Add value labels on bars
     for i, v in enumerate(data_nums):
         ax[0].text(i, v, str(v), ha='center', va='bottom')
 
-    # 第二个子图：电池数量
+    # Second subplot: battery count
     ax[1].bar(conditions, battery_nums, color='lightcoral', alpha=0.7)
     ax[1].set_ylim(0, max(battery_nums) * 1.2)
     ax[1].set_title('Battery Number by Condition')
     ax[1].set_xlabel('Condition')
     ax[1].set_xticklabels(conditions, rotation=45, ha='right')
     ax[1].set_ylabel('Battery Number')
-    # 在柱子上添加数值标签
+    # Add value labels on bars
     for i, v in enumerate(battery_nums):
         ax[1].text(i, v, str(v), ha='center', va='bottom')
 
@@ -300,7 +300,7 @@ def generate_client_model(random_seed = 42,num_client=6,mini_type=2,max_type=5,m
     for c in condition:
         df_c = df[df["condition"] == c]
         ID = df_c["No."].unique()
-        dict[c] = sorted(list(ID))#dict keys是电池类型 values是对应电池ID
+        dict[c] = sorted(list(ID))  # dict keys are battery types, values are corresponding battery IDs
 
 
     data_list = []
@@ -308,7 +308,7 @@ def generate_client_model(random_seed = 42,num_client=6,mini_type=2,max_type=5,m
         for battery_id in id_list:
             data_list.append((battery_type, battery_id))
 
-    # 创建 DataFrame
+    # Create DataFrame
     df_data = pd.DataFrame(data_list, columns=['type', 'id'])
     df_data["nums"] = list(range(len(df_data)))
 
@@ -344,6 +344,3 @@ def generate_client_model(random_seed = 42,num_client=6,mini_type=2,max_type=5,m
         import pickle
         with open(f"client_model/{random_seed}/client_{i}.pkl", "wb") as f:
             pickle.dump(client, f)
-
-
-

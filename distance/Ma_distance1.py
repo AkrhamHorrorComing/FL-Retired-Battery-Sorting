@@ -1,16 +1,16 @@
-# (这是你提供的代码)
+# (This is the provided code)
 import client_model
 import pickle
 import pandas as pd
 import numpy as np
-# 假设你的 dataset.py 和 plot.py 也在路径中
+# Assuming dataset.py and plot.py are also in the path
 # import dataset
 # from dataset import generate_client_model
 # import plot
 from matplotlib import pyplot as plt
 import os
 
-# 导入后续需要的库
+# Import required libraries
 from scipy.spatial.distance import cdist
 from scipy.special import softmax
 from sklearn.metrics import accuracy_score
@@ -23,30 +23,30 @@ def distance_weighted_test(random_seed,num_client,epsilon):
     Y_test = test_data["condition"]
 
 
-    print("✅ 1. 加载所有客户端模型...")
+    print("Loading all client models...")
     for i in range(0, num_client):
         with open("client_model/" + str(random_seed) + "/client_" + str(i) + ".pkl", 'rb') as f:
             client = pickle.load(f)
             client_list.append(client)
-    print("所有模型加载完毕。")
+    print("All models loaded.")
 
     # ------------------------------------------------------------------
-    # 续写部分开始
+    # Extension starts
     # ------------------------------------------------------------------
 
-    ### 步骤 1: 预计算每个客户端的均值和逆协方差矩阵
-    print("\n✅ 2. 预计算客户端数据分布 (均值和逆协方差矩阵)...")
+    ### Step 1: Pre-compute mean and inverse covariance matrix for each client
+    print("\nPre-computing client data distribution (mean and inverse covariance matrix)...")
     client_distributions = []
     feature_dim = X_test.shape[1]
     feature_bounds = [(2.4, 4.4)] * feature_dim
 
-    regularization = 1e-6  # 添加正则化项防止协方差矩阵奇异
+    regularization = 1e-6  # Add regularization term to prevent singular covariance matrix
 
     for i, client in enumerate(client_list):
-        # 从客户端对象中获取其训练数据集
+        # Get training dataset from client object
         features = client.dataset.loc[:, "U1":"U41"].values
 
-        # 计算均值和协方差
+        # Calculate mean and covariance
         mean = np.mean(features, axis=0)
         cov = np.cov(features, rowvar=False)
         from dp_secret import get_dp_stats_fully_manual_robust
@@ -57,61 +57,61 @@ def distance_weighted_test(random_seed,num_client,epsilon):
         )
 
 
-        # 添加正则化项以确保矩阵可逆
+        # Add regularization term to ensure matrix is invertible
         cov += np.eye(feature_dim) * regularization
         inv_cov = np.linalg.inv(cov)
 
         client_distributions.append({'mean': mean, 'inv_cov': inv_cov})
-        print(f"客户端 {i} 的分布参数计算完成。")
+        print(f"Client {i} distribution parameters computed.")
 
-    ### 步骤 2: 获取所有客户端对测试集的概率预测
-    print("\n✅ 3. 从所有客户端获取概率预测...")
+    ### Step 2: Get probability predictions from all clients on test set
+    print("\nGetting probability predictions from all clients...")
     all_probs_list = []
     for client in client_list:
         _, prob_matrix = client.predict(X_test, if_decode=0)
         # prob_matrix = np.where(prob_matrix > 0.6, prob_matrix, 0)
         all_probs_list.append(prob_matrix)
 
-    # 将概率列表堆叠成一个三维数组 (客户端, 样本数, 类别数)
-    # 然后转置为 (样本数, 客户端, 类别数) 以便后续计算
+    # Stack probability list into a 3D array (clients, n_samples, n_classes)
+    # Then transpose to (n_samples, n_clients, n_classes) for subsequent calculations
     all_probs_stacked = np.stack(all_probs_list, axis=0).transpose((1, 0, 2))
-    print(f"组合后的概率矩阵形状: {all_probs_stacked.shape}")
+    print(f"Combined probability matrix shape: {all_probs_stacked.shape}")
 
-    ### 步骤 3: 高效计算马氏距离
-    print("\n✅ 4. 计算每个测试点到各客户端分布的马氏距离...")
+    ### Step 3: Efficiently compute Mahalanobis distance
+    print("\nComputing Mahalanobis distance from each test point to each client distribution...")
     X_test_values = X_test.values
     distance_matrix = np.zeros((X_test_values.shape[0], num_client))
 
     for i, dist_params in enumerate(client_distributions):
-        # 使用 cdist 高效计算一批数据到一个分布的马氏距离
+        # Use cdist to efficiently compute Mahalanobis distance for a batch of data to a distribution
         distances = cdist(X_test_values, [dist_params['mean']],
                           metric='mahalanobis', VI=dist_params['inv_cov'])
         distance_matrix[:, i] = distances.flatten()
 
-    print(f"马氏距离矩阵形状: {distance_matrix.shape}")
+    print(f"Mahalanobis distance matrix shape: {distance_matrix.shape}")
 
-    ### 步骤 4: 将距离转换为权重
-    print("\n✅ 5. 使用 Softmax 将距离转换为权重...")
-    temperature = 1.0  # Softmax 温度参数，可调
-    # 距离越小，权重应越大，因此对负距离应用Softmax
+    ### Step 4: Convert distances to weights
+    print("\nConverting distances to weights using Softmax...")
+    temperature = 1.0  # Softmax temperature parameter, adjustable
+    # Smaller distance means larger weight, so apply Softmax to negative distances
     weights = softmax(-distance_matrix / temperature, axis=1)
-    print(f"权重矩阵形状: {weights.shape}")
-    # 打印第一个样本的权重作为示例
-    print(f"第一个样本的权重分布: {np.round(weights[0], 4)}")
+    print(f"Weight matrix shape: {weights.shape}")
+    # Print first sample's weights as example
+    print(f"First sample weight distribution: {np.round(weights[0], 4)}")
 
-    ### 步骤 5: 加权聚合概率
-    print("\n✅ 6. 加权聚合所有模型的预测概率...")
-    # 将权重矩阵从 (n_samples, n_clients) 扩展为 (n_samples, n_clients, 1)
-    # 以便与 (n_samples, n_clients, n_classes) 的概率矩阵进行广播乘法
+    ### Step 5: Weighted aggregation of probabilities
+    print("\nWeighted aggregation of all model prediction probabilities...")
+    # Expand weight matrix from (n_samples, n_clients) to (n_samples, n_clients, 1)
+    # For broadcast multiplication with probability matrix of shape (n_samples, n_clients, n_classes)
     weights_reshaped = weights[:, :, np.newaxis]
 
-    # 执行加权求和
+    # Execute weighted sum
     final_aggregated_probs = np.sum(all_probs_stacked * weights_reshaped, axis=1)
-    print(f"最终聚合后的概率矩阵形状: {final_aggregated_probs.shape}")
+    print(f"Final aggregated probability matrix shape: {final_aggregated_probs.shape}")
 
-    ### 步骤 6: 评估最终准确率
-    print("\n✅ 7. 评估聚合模型的最终准确率...")
-    # 获取最终预测的类别（编码状态）
+    ### Step 6: Evaluate final accuracy
+    print("\nEvaluating aggregated model's final accuracy...")
+    # Get final predicted classes (encoded)
     final_predictions_encoded = np.argmax(final_aggregated_probs, axis=1)
 
     result = final_predictions_encoded
@@ -119,7 +119,7 @@ def distance_weighted_test(random_seed,num_client,epsilon):
     true=list(Y_test)
 
     from exp.evaluation import evalute_accuracy
-    evalute_accuracy(result, true, label, random_seed, "马氏距离加权聚合法")
+    evalute_accuracy(result, true, label, random_seed, "Mahalanobis distance weighted aggregation")
 
 
 

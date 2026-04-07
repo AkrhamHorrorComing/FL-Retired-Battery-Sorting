@@ -1,4 +1,4 @@
-#划分训练集和测试集 8：2比例
+# Split training and test sets at 8:2 ratio
 import os.path
 import pandas as pd
 import numpy as np
@@ -18,22 +18,22 @@ def split_dataset(random_seed=42):
 
         random.seed(random_seed)
 
-        # 随机打乱索引
+        # Randomly shuffle indices
         indices = np.random.permutation(ID)
-        # 计算分割点
+        # Calculate split point
         split_point_1 = int(len(ID) * 0.8)
         # split_point_2 = int(len(ID) * 0.8)
 
-        # 划分训练集和测试集
+        # Split into training and test sets
         train_ids = np.sort(indices[:split_point_1])
         # valid_ids = np.sort(indices[split_point_1:split_point_2])
         test_ids = np.sort(indices[split_point_1:])
 
         DF = pd.DataFrame({
             "name": [c],
-            "train": [train_ids.tolist()],  # 将整个数组作为一个元素
-            # "valid": [valid_ids.tolist()],  # 将整个数组作为一个元素
-            "test": [test_ids.tolist()]  # 同样将整个数组作为一个元素
+            "train": [train_ids.tolist()],  # Use the entire array as one element
+            # "valid": [valid_ids.tolist()],  # Use the entire array as one element
+            "test": [test_ids.tolist()]  # Also use the entire array as one element
 
         })
         flag = os.path.exists("split_dataset//"+str(random_seed)+".csv")
@@ -41,7 +41,7 @@ def split_dataset(random_seed=42):
 
 def read_data(random_seed=42):
     df = pd.read_csv("split_dataset//"+str(random_seed)+".csv",sep="\t")
-    df["train"] = df["train"].apply(ast.literal_eval)  # 安全的方式将字符串转换为列表
+    df["train"] = df["train"].apply(ast.literal_eval)  # Safely convert string to list
     # df["valid"] = df["valid"].apply(ast.literal_eval)
     df["test"] = df["test"].apply(ast.literal_eval)
     data_all = pd.read_csv('mat_data.csv',sep="\t",index_col=0)

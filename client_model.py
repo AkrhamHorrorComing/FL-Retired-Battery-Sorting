@@ -10,10 +10,10 @@ class client_model():
         self.model = None
         self.random_seed = random_seed
 
-        # 用于描述包含哪些电池
+        # Describes which batteries are included
         self.client_data = None
 
-        # 训练数据
+        # Training data
         self.dataset = None
         self.validation_data = None
         self.dataset_num_list = np.zeros([1,8])
@@ -43,9 +43,9 @@ class client_model():
         }
 
         if isinstance(list(label), list):
-            return [mapping_dict[l] for l in label]  # 多元素列表
+            return [mapping_dict[l] for l in label]  # Multi-element list
         else:
-            return mapping_dict[label]  # 单个值（非列表）
+            return mapping_dict[label]  # Single value (non-list)
 
     def decode(self, label):
         mapping_dict = {
@@ -61,25 +61,25 @@ class client_model():
 
         if isinstance(label, list):
             if len(label) == 1:
-                return mapping_dict[label[0]]  # 单元素列表
+                return mapping_dict[label[0]]  # Single-element list
             else:
-                return [mapping_dict[l] for l in label]  # 多元素列表
+                return [mapping_dict[l] for l in label]  # Multi-element list
         else:
-            return mapping_dict[label]  # 单个值（非列表）
+            return mapping_dict[label]  # Single value (non-list)
 
     def set_dataset(self, dataset):
         self.client_data = dataset
         self.type = list(self.client_data.keys())
         self.size = sum([len(id_array) for id_array in self.client_data.values()])
 
-        print(f"客户端 {self.client_id} 数据集设置完成，包含{self.type}")
+        print(f"Client {self.client_id} dataset setup complete, containing {self.type}")
 
     def write_to_csv(self,path):
 
         data = self.dataset
         type_list = data["condition"].unique()
 
-        # 使用列表收集数据
+        # Collect data using a list
         data_list = []
         for type_ in type_list:
             data_type = data[data["condition"] == type_]
@@ -89,47 +89,47 @@ class client_model():
                 "type": type_,
                 "battery_num": len(battery_num),
                 "data_num": len(data_type),
-                "battery": sorted(battery_num.tolist())  # 将numpy数组转换为列表
+                "battery": sorted(battery_num.tolist())  # Convert numpy array to list
             })
 
-        # 一次性创建DataFrame
+        # Create DataFrame at once
         dataframe = pd.DataFrame(data_list)
         dataframe.to_csv(path+f"client_{self.client_id}.csv", index=False,sep = "\t")
 
     def set_dataframe(self,dataframe):
-        #这是训练数据
+        # This is the training data
         self.dataset = dataframe
         self.dataset_num_list = np.zeros([1,8])
         for t in self.type:
             self.dataset_num_list[0,self.encode([t])] = \
                 self.dataset[self.dataset["condition"] == t]['No.'].nunique()
         self.dataset_num_list = self.dataset_num_list / np.linalg.norm(self.dataset_num_list)
-        print(f"客户端 {self.client_id} frame设置完成")
+        print(f"Client {self.client_id} dataframe setup complete")
 
     def check_up(self):
         type = self.dataset["condition"].unique()
         if set(type) != set(self.type):
-            print("种类对不上！")
+            print("Category mismatch!")
         for t in type:
             if set(self.dataset[self.dataset["condition"] == t]["No."].values) != set(self.client_data[t]):
-                print(f"类型{t}的数据对不上！")
-        print("检查完成")
+                print(f"Data mismatch for type {t}!")
+        print("Check complete")
 
         import math
 
-        # 获取唯一的condition类型
+        # Get unique condition types
         types = self.dataset["condition"].unique()
         n_types = len(types)
 
-        # 计算合适的子图布局（包括All子图）
-        total_plots = n_types + 1  # 明确总子图数
+        # Calculate appropriate subplot layout (including All subplot)
+        total_plots = n_types + 1  # Total number of subplots
         n_cols = min(3, total_plots)
         n_rows = math.ceil(total_plots / n_cols)
 
-        # 创建子图
+        # Create subplots
         fig, axes = plt.subplots(n_rows, n_cols, figsize=(5 * n_cols, 4 * n_rows))
 
-        # 确保axes是二维数组形式
+        # Ensure axes is in 2D array form
         if n_rows == 1 and n_cols == 1:
             axes = [[axes]]
         elif n_rows == 1:
@@ -137,12 +137,12 @@ class client_model():
         elif n_cols == 1:
             axes = [[ax] for ax in axes]
         else:
-            # 将axes转换为列表形式便于索引
+            # Convert axes to list form for easier indexing
             axes = axes.tolist() if hasattr(axes, 'tolist') else axes
 
         data = self.dataset
 
-        # 为每个类型绘制子图
+        # Draw subplots for each type
         for idx, condition_type in enumerate(types):
             row = idx // n_cols
             col = idx % n_cols
@@ -157,26 +157,26 @@ class client_model():
             axes[row][col].set_ylabel('Frequency')
             axes[row][col].grid(True, alpha=0.3)
 
-        # 修复：明确计算All子图的位置
-        all_idx = n_types  # All子图的索引
+        # Fix: explicitly calculate All subplot position
+        all_idx = n_types  # Index of the All subplot
         row = all_idx // n_cols
         col = all_idx % n_cols
 
         SOC_all = data["SOCR"]
-        axes[row][col].hist(SOC_all, bins=20, alpha=0.7, color='purple', edgecolor=None)  # 使用不同颜色
+        axes[row][col].hist(SOC_all, bins=20, alpha=0.7, color='purple', edgecolor=None)  # Use a different color
         axes[row][col].set_title('All')
         axes[row][col].set_xlim([0, 1])
         axes[row][col].set_xlabel('SOC')
         axes[row][col].set_ylabel('Frequency')
         axes[row][col].grid(True, alpha=0.3)
 
-        # 隐藏多余的子图
+        # Hide extra subplots
         for idx in range(total_plots, n_rows * n_cols):
             row = idx // n_cols
             col = idx % n_cols
             axes[row][col].set_visible(False)
 
-        # 调整布局
+        # Adjust layout
         plt.tight_layout()
         plt.savefig(f"client_model/{self.random_seed}/client_{self.client_id}_SOC.png", dpi=600, bbox_inches='tight')
         plt.close()
@@ -185,7 +185,7 @@ class client_model():
         data = self.dataset
         type_list = data["condition"].unique()
 
-        # 使用列表收集数据
+        # Collect data using a list
         data_list = []
         for type_ in type_list:
             data_type = data[data["condition"] == type_]
@@ -195,9 +195,9 @@ class client_model():
                 "type": type_,
                 "battery_num": len(battery_num),
                 "data_num": len(data_type),
-                "battery": sorted(battery_num.tolist())  # 将numpy数组转换为列表
+                "battery": sorted(battery_num.tolist())  # Convert numpy array to list
             })
-        # 一次性创建DataFrame
+        # Create DataFrame at once
         dataframe = pd.DataFrame(data_list)
 
         data_series = dataframe.loc[:, ['type', 'data_num']]
@@ -210,14 +210,14 @@ class client_model():
 
 
             if data_num < max_num:
-                print(f"类型{type_}的数据数量不足{max_num}个，需要增加")
-                # 计算需要增加的数量
+                print(f"Type {type_} has insufficient data ({data_num} < {max_num}), augmentation needed")
+                # Calculate the number of samples to add
                 num_to_add = int(max_num - data_num)
 
                 origin_data =  data[data["condition"] == type_]
-                # 随机选择电池进行复制
+                # Randomly select batteries for duplication
                 selected_index = random.choices(origin_data.index, k=num_to_add)
-                # 复制数据
+                # Duplicate data
                 append_data = data.loc[selected_index]
                 data = pd.concat([data, append_data], ignore_index=True)
         return data
@@ -226,7 +226,7 @@ class client_model():
         data = self.dataset
         type_list = data["condition"].unique()
 
-        # 使用列表收集数据
+        # Collect data using a list
         data_list = []
         for type_ in type_list:
             data_type = data[data["condition"] == type_]
@@ -236,9 +236,9 @@ class client_model():
                 "type": type_,
                 "battery_num": len(battery_num),
                 "data_num": len(data_type),
-                "battery": sorted(battery_num.tolist())  # 将numpy数组转换为列表
+                "battery": sorted(battery_num.tolist())  # Convert numpy array to list
             })
-        # 一次性创建DataFrame
+        # Create DataFrame at once
         dataframe = pd.DataFrame(data_list)
 
         data_series = dataframe.loc[:, ['type', 'data_num']]
@@ -251,22 +251,21 @@ class client_model():
 
 
             if data_num < max_num:
-                # print(f"类型{type_}的数据数量不足{max_num}个，需要增加")
-                # 计算需要增加的数量
+                # Calculate the number of samples to add
                 num_to_add = int(max_num - data_num)
 
                 origin_data =  data[data["condition"] == type_]
                 features = origin_data.loc[:, "U1":"U41"]
                 mean_vec = features.mean().values
                 cov_matrix = features.cov().values
-                # 随机选择电池进行复制
+                # Randomly select batteries for duplication
                 selected_index = random.choices(origin_data.index, k=num_to_add)
-                # 复制数据
+                # Duplicate data
                 append_data = data.loc[selected_index]
 
                 correlated_noise = np.random.multivariate_normal(np.zeros(features.shape[1]), cov_matrix,
                                                                  size=num_to_add)
-                # 3. 添加噪声
+                # Add noise
                 append_data.loc[:, "U1":"U41"] += correlated_noise
 
 
@@ -338,15 +337,15 @@ class client_model():
         elif model == "DT":
             clf = DecisionTreeClassifier(max_depth=100, random_state=42)
         else:
-            print("未设置模型")
+            print("Model not specified")
             raise ValueError
 
         clf.fit(X_train_kernel_pca, y_train)
         self.model = clf
 
         with open(f"client_model/{self.random_seed}/logging.txt", 'a', encoding='utf-8') as f:
-            print(f"客户端 {self.client_id} 模型在训练集准确率: {clf.score(X_train_kernel_pca, y_train)}",file=f)
-        print(f"客户端 {self.client_id} 模型设置完成")
+            print(f"Client {self.client_id} model training accuracy: {clf.score(X_train_kernel_pca, y_train)}",file=f)
+        print(f"Client {self.client_id} model setup complete")
 
 
     def valid_score(self,x_valid,y_valid,write_to_file = 1):
@@ -357,7 +356,7 @@ class client_model():
         x_valid_kernel_pca = self.PCA.transform(x_valid)
         if write_to_file:
             with open(f"client_model/{self.random_seed}/logging.txt", 'a', encoding='utf-8') as f:
-                print(f"客户端 {self.client_id} 模型valid准确率: {model.score(x_valid_kernel_pca, y_valid)}",file=f)
+                print(f"Client {self.client_id} model validation accuracy: {model.score(x_valid_kernel_pca, y_valid)}",file=f)
         return model.score(x_valid_kernel_pca, y_valid)
 
     def test_score(self,x_test,y_test,write_to_file = 1):
@@ -368,20 +367,20 @@ class client_model():
         x_test_kernel_pca = self.PCA.transform(x_test)
         if write_to_file:
             with open(f"client_model/{self.random_seed}/logging.txt", 'a', encoding='utf-8') as f:
-                print(f"客户端 {self.client_id} 模型准确率: {model.score(x_test_kernel_pca, y_test)}",file=f)
+                print(f"Client {self.client_id} model test accuracy: {model.score(x_test_kernel_pca, y_test)}",file=f)
         return model.score(x_test_kernel_pca, y_test)
 
     def type_score(self,x_test,y_test,write_to_file = 1):
-        # 首先创建过滤掩码
+        # First create a filter mask
         mask = y_test.isin(self.type)
-        # 过滤数据
+        # Filter data
         x_test_filtered = x_test[mask]
         y_test_filtered = y_test[mask]
-        # 编码标签
+        # Encode labels
         y_test_encoded = self.encode(list(y_test_filtered))
-        # 转换特征
+        # Transform features
         x_test_kernel_pca = self.PCA.transform(x_test_filtered)
-        # 预测
+        # Predict
         label_encoded = self.model.predict(x_test_kernel_pca)
 
         class_accuracies = {}
@@ -389,11 +388,11 @@ class client_model():
 
         unique_classes = np.unique(y_test_encoded)
         for class_idx in unique_classes:
-            # 找到该类别的样本索引
+            # Find sample indices for this class
             class_indices = np.where(y_test_encoded == class_idx)[0]
             if len(class_indices) == 0:
                 continue
-            # 计算该类别的准确率
+            # Calculate accuracy for this class
             class_correct = 0
             for idx in class_indices:
                 if y_test_encoded[idx] == label_encoded[idx]:
@@ -418,21 +417,21 @@ class client_model():
             all_classes.update(client_data.keys())
         all_classes = sorted(all_classes)
 
-        # 创建3x3的子图布局
+        # Create 3x3 subplot layout
         fig, axes = plt.subplots(3, 3, figsize=(15, 12),sharey=True)
         axes = axes.flatten()
 
-        # 颜色设置
+        # Color settings
         colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
 
-        # 为每个类别创建一个子图（水平柱状图）
+        # Create a subplot for each class (horizontal bar chart)
         for class_idx, class_name in enumerate(all_classes):
             if class_idx >= len(axes):
                 break
 
             ax = axes[class_idx]
 
-            # 准备数据
+            # Prepare data
             client_names = []
             class_accuracies = []
 
@@ -441,11 +440,11 @@ class client_model():
                 client_names.append(client_name)
                 class_accuracies.append(accuracy)
 
-            # 绘制水平柱状图
+            # Draw horizontal bar chart
             y_pos = np.arange(len(client_names))
             bars = ax.barh(y_pos, class_accuracies, color=colors[:len(client_names)], alpha=0.8)
 
-            # 设置子图
+            # Configure subplot
             ax.set_title(f'{class_name}', fontweight='bold')
             ax.set_xlabel('Accuracy')
             ax.set_xlim(0.6, 1.0)
@@ -455,14 +454,14 @@ class client_model():
             ax.set_yticklabels(client_names)
             ax.grid(True, alpha=0.3)
 
-            # 在柱子上添加数值
+            # Add value labels on bars
             for bar, acc in zip(bars, class_accuracies):
                 width = bar.get_width()
                 if width > 0:
                     ax.text(width-0.05, bar.get_y() + bar.get_height() / 2.,
                             f'{acc:.3f}', ha='left', va='center', fontsize=15,color='white')
 
-        # 隐藏多余的子图
+        # Hide extra subplots
         for i in range(len(all_classes), len(axes)):
             axes[i].set_visible(False)
 
@@ -493,14 +492,14 @@ class client_model():
         from sklearn.preprocessing import StandardScaler
         from sklearn.decomposition import KernelPCA
 
-        # 数据增强
+        # Data augmentation
         augmented_data = self.data_augmentation_1()
 
         kpca = KernelPCA(
             n_components=20,
             kernel="rbf",
-            gamma=None,  # ⭐️ gamma=None 让 sklearn 自动选择一个好值
-            fit_inverse_transform=True,  # (可选, 但最好有)
+            gamma=None,  # gamma=None lets sklearn automatically choose a good value
+            fit_inverse_transform=True,  # (optional, but recommended)
             random_state=self.random_seed
         )
 
@@ -534,7 +533,7 @@ class client_model():
 
             dataset = TensorDataset(augmented_tensor)
 
-        # 划分训练集和验证集
+        # Split into training and validation sets
         #     train_size = int(0.8 * len(dataset))
         #     val_size = len(dataset) - train_size
         #     train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
@@ -553,12 +552,12 @@ class client_model():
             #     shuffle=False
             # )
 
-            # 2. 模型和优化器初始化
+            # Initialize model and optimizer
             encoder = Autoencoder(
                 pca_data.shape[1],
                 hidden_dim = hidden_dim
             )
-            optimizer = torch.optim.AdamW(  # 使用AdamW
+            optimizer = torch.optim.AdamW(  # Using AdamW
                 encoder.parameters(),
                 lr=0.01,
                 betas=(0.9, 0.999),
@@ -567,18 +566,18 @@ class client_model():
             scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.8)
             criterion = torch.nn.L1Loss()
 
-            # 3. 训练循环
+            # Training loop
             best_train_loss = float('inf')
             patience = 50
             patience_counter = 0
             train_losses = []
 
             for epoch in range(500):
-                # 训练阶段
+                # Training phase
                 encoder.train()
                 train_loss = 0.0
                 for batch in train_loader:
-                    batch_data = batch[0]  # 从 TensorDataset 中提取数据
+                    batch_data = batch[0]  # Extract data from TensorDataset
                     optimizer.zero_grad()
                     outputs = encoder(batch_data)
                     loss = criterion(outputs, batch_data)
@@ -586,7 +585,7 @@ class client_model():
                     optimizer.step()
                     train_loss += loss.item()
 
-                # 验证阶段
+                # Validation phase
                 # encoder.eval()
                 # val_loss = 0.0
                 # with torch.no_grad():
@@ -595,29 +594,29 @@ class client_model():
                 #         outputs = encoder(batch_data)
                 #         val_loss += criterion(outputs, batch_data).item()
 
-                # 计算平均损失
+                # Calculate average loss
                 avg_train_loss = train_loss / len(train_loader)
                 # avg_val_loss = val_loss / len(val_loader)
                 train_losses.append(avg_train_loss)
                 # val_losses.append(avg_val_loss)
-                # 学习率调度（每个epoch后调用）
+                # Learning rate scheduling (called after each epoch)
                 scheduler.step()
 
-                # 早停机制
+                # Early stopping mechanism
                 if avg_train_loss < best_train_loss:
                     best_train_loss = avg_train_loss
                     torch.save(encoder.state_dict(), f"client_model/{self.random_seed}/best_encoder.pth")
                 # else:
                 #     patience_counter += 1
 
-                # 打印训练信息
+                # Print training information
                 # current_lr = optimizer.param_groups[0]['lr']
                 # print(f"Epoch {epoch + 1}, Train Loss: {avg_train_loss:.4f}, LR: {current_lr:.6f},  "
                 #       # f"Val Loss: {avg_val_loss:.4f},"
                 #       f"Patience: {patience_counter}/{patience}")
 
 
-                # 早停检查
+                # Early stopping check
                 # if patience_counter >= patience:
                 #     print(f"Early stopping at epoch {epoch + 1}")
                 #     break
@@ -625,7 +624,7 @@ class client_model():
             with open(f"client_model/{self.random_seed}/logging.txt", "a") as f:
                 f.write(f"\n{self.client_id} Autoencoder {type_} train loss {train_losses[-1]:.4f}")
 
-            # 4. 加载最佳模型
+            # Load best model
             encoder.load_state_dict(
                 torch.load(f"client_model/{self.random_seed}/best_encoder.pth")
             )
@@ -654,29 +653,14 @@ class client_model():
         #     distance_matrix = cdist(features_pca, [mean],
         #                   metric='mahalanobis', VI=inv_cov)
 
-        # --- 步骤D: 聚合距离矩阵得到最终分数 ---
+        # Step D: Aggregate distance matrix to get final scores
         if aggregation_method == 'min':
-            # 对每一行（每个测试样本）取最小值
+            # Take the minimum value for each row (each test sample)
             scores = np.min(distance_matrix, axis=1)
         elif aggregation_method == 'mean':
-            # 对每一行（每个测试样本）取平均值
+            # Take the mean value for each row (each test sample)
             scores = np.mean(distance_matrix, axis=1)
         else:
-            raise ValueError("aggregation_method 必须是 'min' 或 'mean'")
+            raise ValueError("aggregation_method must be 'min' or 'mean'")
 
         return scores
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

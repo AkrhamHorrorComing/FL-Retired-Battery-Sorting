@@ -1,17 +1,17 @@
-#基于PCA特征距离 计算最小距离 取最大特征的最小距离
+# Based on PCA feature distance, compute minimum distance, take the minimum distance of the maximum feature
 import client_model
 import pickle
 import pandas as pd
 import numpy as np
 import torch
-# 假设你的 dataset.py 和 plot.py 也在路径中
+# Assuming your dataset.py and plot.py are also in the path
 # import dataset
 # from dataset import generate_client_model
 # import plot
 from matplotlib import pyplot as plt
 import os
 
-# 导入后续需要的库
+# Import required libraries
 from scipy.spatial.distance import cdist
 from scipy.special import softmax
 from sklearn.metrics import accuracy_score
@@ -27,12 +27,12 @@ def encoder_weighted_test(random_seed,num_client):
     Y_test = test_data["condition"]
 
 
-    print("✅ 1. 加载所有客户端模型...")
+    print("1. Loading all client models...")
     for i in range(0, num_client):
         with open("client_model/" + str(random_seed) + "/client_" + str(i) + ".pkl", 'rb') as f:
             client = pickle.load(f)
             client_list.append(client)
-    print("所有模型加载完毕。")
+    print("All models loaded.")
 
     prediction_list = []
     all_probs_list = []
@@ -58,7 +58,7 @@ def encoder_weighted_test(random_seed,num_client):
 
     final_predictions_encoded = all_prediction_list[np.arange(selected_index.shape[0]), selected_index]
 
-    #概率加权
+    # Probability weighting
 
 
 
@@ -67,7 +67,7 @@ def encoder_weighted_test(random_seed,num_client):
 
 
 
-    # 计算准确率
+    # Calculate accuracy
     final_accuracy = accuracy_score(Y_test_encoded, final_predictions_encoded)
 
     print("\n" + "=" * 50)
@@ -75,7 +75,7 @@ def encoder_weighted_test(random_seed,num_client):
         print("Test result:",file=f)
     with open(f"client_model/{random_seed}/logging.txt", 'a', encoding='utf-8') as f:
         print("\n" + "=" * 50)
-        print(f"🚀 基于Score_min的最终准确率: {final_accuracy:.4f}",file=f)
+        print(f"Score_min final accuracy: {final_accuracy:.4f}",file=f)
     print("=" * 50)
 
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-快速测试脚本 - 验证run.py的核心功能
 Quick Test Script - Validate Core Functions of run.py
 """
 
@@ -9,64 +8,64 @@ import os
 import sys
 
 def test_imports():
-    """测试必要的导入"""
-    print("测试模块导入...")
+    """Test required imports"""
+    print("Testing module imports...")
     try:
         import pandas as pd
-        print("[OK] pandas 导入成功")
+        print("[OK] pandas imported successfully")
 
         import numpy as np
-        print("[OK] numpy 导入成功")
+        print("[OK] numpy imported successfully")
 
         import dataset
-        print("[OK] dataset 模块导入成功")
+        print("[OK] dataset module imported successfully")
 
         import plot
-        print("[OK] plot 模块导入成功")
+        print("[OK] plot module imported successfully")
 
-        # 测试距离计算模块
+        # Test distance calculation modules
         try:
             from distance import aggregate_fed, aggregate_1
-            print("[OK] 距离聚合模块导入成功")
+            print("[OK] Distance aggregation modules imported successfully")
         except ImportError as e:
-            print(f"[WARN] 距离聚合模块导入警告: {e}")
+            print(f"[WARN] Distance aggregation module import warning: {e}")
 
         return True
 
     except ImportError as e:
-        print(f"[ERROR] 导入失败: {e}")
+        print(f"[ERROR] Import failed: {e}")
         return False
 
 def test_directory_structure():
-    """测试目录结构"""
-    print("\n检查目录结构...")
+    """Test directory structure"""
+    print("\nChecking directory structure...")
 
     directories = ["client_model", "data", "exp", "distance"]
     for directory in directories:
         if os.path.exists(directory):
-            print(f"[OK] {directory}/ 目录存在")
+            print(f"[OK] {directory}/ directory exists")
         else:
-            print(f"[WARN] {directory}/ 目录不存在")
+            print(f"[WARN] {directory}/ directory does not exist")
 
 def test_run_py_imports():
-    """测试run.py的导入"""
-    print("\n测试run.py导入...")
+    """Test run.py imports"""
+    print("\nTesting run.py imports...")
     try:
-        # 尝试导入run.py中的函数
+        # Attempt to import functions from run.py
         sys.path.append(os.getcwd())
 
-        # 检查run.py文件是否存在
+        # Check if run.py file exists
         if not os.path.exists("run.py"):
-            print("[ERROR] run.py 文件不存在")
+            print("[ERROR] run.py file does not exist")
             return False
 
-        print("[OK] run.py 文件存在")
+        print("[OK] run.py file exists")
 
-        # 验证语法
+        # Verify syntax
         with open("run.py", 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # 检查关键函数是否定义
+        # Check if key functions are defined
         required_functions = [
             'setup_directories',
             'check_data_files',
@@ -79,26 +78,26 @@ def test_run_py_imports():
 
         for func in required_functions:
             if f"def {func}(" in content:
-                print(f"[OK] 函数 {func} 已定义")
+                print(f"[OK] function {func} defined")
             else:
-                print(f"[ERROR] 函数 {func} 未找到")
+                print(f"[ERROR] function {func} not found")
 
         return True
 
     except Exception as e:
-        print(f"[ERROR] 测试失败: {e}")
+        print(f"[ERROR] Test failed: {e}")
         return False
 
 def test_config_parameters():
-    """测试配置参数"""
-    print("\n检查配置参数...")
+    """Test configuration parameters"""
+    print("\nChecking configuration parameters...")
 
     try:
-        # 读取run.py文件
+        # Read run.py file
         with open("run.py", 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # 检查关键配置参数
+        # Check key configuration parameters
         configs = {
             'MODEL_NAME': 'MLP',
             'NUM_CLIENT': 6,
@@ -112,20 +111,20 @@ def test_config_parameters():
             if f"{config} = {expected_value}" in content:
                 print(f"[OK] {config} = {expected_value}")
             else:
-                print(f"[WARN] {config} 可能未正确设置")
+                print(f"[WARN] {config} may not be set correctly")
 
         return True
 
     except Exception as e:
-        print(f"[ERROR] 配置检查失败: {e}")
+        print(f"[ERROR] Configuration check failed: {e}")
         return False
 
 def main():
-    """主测试函数"""
-    print("run.py 功能验证测试")
+    """Main test function"""
+    print("run.py Function Validation Test")
     print("=" * 50)
 
-    # 运行所有测试
+    # Run all tests
     tests = [
         test_imports,
         test_directory_structure,
@@ -141,17 +140,17 @@ def main():
             if test():
                 passed += 1
         except Exception as e:
-            print(f"[ERROR] 测试 {test.__name__} 发生异常: {e}")
+            print(f"[ERROR] Exception in test {test.__name__}: {e}")
 
-    print("\n测试结果汇总")
+    print("\nTest Results Summary")
     print("=" * 50)
-    print(f"通过: {passed}/{total}")
+    print(f"Passed: {passed}/{total}")
 
     if passed == total:
-        print("所有测试通过！run.py 修改成功！")
+        print("All tests passed! run.py modification successful!")
         return True
     else:
-        print("部分测试失败，请检查相关问题")
+        print("Some tests failed, please check the issues")
         return False
 
 if __name__ == "__main__":

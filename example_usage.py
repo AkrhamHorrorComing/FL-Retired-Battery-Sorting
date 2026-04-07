@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """
-联邦学习电池分类系统 - 快速开始示例
 Federated Learning Battery Classification System - Quick Start Example
 """
 
@@ -9,80 +8,79 @@ from client_model import client_model
 import plot
 
 def quick_start_example():
-    """快速开始联邦学习电池分类系统的示例"""
+    """Quick start example for the federated learning battery classification system"""
 
-    print("🚀 开始联邦学习电池分类系统快速示例")
+    print("🚀 Starting federated learning battery classification system quick example")
     print("=" * 50)
 
-    # 1. 生成客户端模型
-    print("📊 生成客户端模型...")
+    # 1. Generate client models
+    print("📊 Generating client models...")
     dataset.generate_client_model(
         random_seed=42,
-        num_client=4,           # 4个客户端
-        mini_type=2,            # 每个客户端最少2种电池类型
-        max_type=4,             # 每个客户端最多4种电池类型
-        model_type="MLP",       # 使用MLP模型
-        hidden_dim=8            # 编码器隐藏层维度
+        num_client=4,           # 4 clients
+        mini_type=2,            # Minimum 2 battery types per client
+        max_type=4,             # Maximum 4 battery types per client
+        model_type="MLP",       # Using MLP model
+        hidden_dim=8            # Encoder hidden layer dimension
     )
 
-    # 2. 绘制训练数据集分布
-    print("📈 绘制数据集分布...")
+    # 2. Plot training dataset distribution
+    print("📈 Plotting dataset distribution...")
     dataset.plot_train_dataset(random_seed=42)
 
-    # 3. 绘制客户端数据分布
-    print("📊 绘制客户端数据分布...")
+    # 3. Plot client data distribution
+    print("📊 Plotting client data distribution...")
     plot.plot(num_client=4, random_seed=42)
 
-    print("✅ 快速示例完成！")
-    print("📁 查看生成的文件:")
-    print("   - client_model/42/: 客户端模型和结果")
-    print("   - 数据分布图和模型性能图表")
+    print("✅ Quick example complete!")
+    print("📁 Generated files:")
+    print("   - client_model/42/: Client models and results")
+    print("   - Data distribution charts and model performance plots")
 
 def advanced_example():
-    """更高级的示例，展示不同的配置选项"""
+    """More advanced example demonstrating different configuration options"""
 
-    print("🔬 高级示例 - 不同配置的比较")
+    print("🔬 Advanced Example - Comparing Different Configurations")
     print("=" * 50)
 
-    # 不同的随机种子
+    # Different random seeds
     seeds = [42, 123, 456]
 
     for seed in seeds:
-        print(f"\n🎲 处理随机种子: {seed}")
+        print(f"\n🎲 Processing random seed: {seed}")
 
-        # 生成客户端模型
+        # Generate client models
         dataset.generate_client_model(
             random_seed=seed,
             num_client=6,
             mini_type=2,
             max_type=5,
-            model_type="MLP_2",   # 使用较小的MLP架构
+            model_type="MLP_2",   # Using smaller MLP architecture
             hidden_dim=10
         )
 
-        # 绘制结果
+        # Plot results
         plot.plot(num_client=6, random_seed=seed)
 
-    print("\n🎯 高级示例完成！")
-    print("📊 可以比较不同随机种子下的结果")
+    print("\n🎯 Advanced example complete!")
+    print("📊 Can compare results across different random seeds")
 
 if __name__ == "__main__":
-    print("联邦学习电池分类系统")
     print("Federated Learning Battery Classification System")
-    print("\n选择运行模式:")
-    print("1. 快速开始示例")
-    print("2. 高级示例")
-    print("3. 运行联邦学习训练")
+    print("\nSelect run mode:")
+    print("1. Quick start example")
+    print("2. Advanced example")
+    print("3. Run federated learning training")
 
-    choice = input("\n请输入选择 (1/2/3): ").strip()
+    choice = input("\nEnter your choice (1/2/3): ").strip()
 
     if choice == "1":
         quick_start_example()
     elif choice == "2":
         advanced_example()
     elif choice == "3":
-        print("🏃 运行联邦学习训练...")
-        import run  # 导入主运行脚本
+        print("🏃 Running federated learning training...")
+        import run  # Import main runner script
     else:
-        print("❌ 无效选择，运行快速开始示例...")
+        print("❌ Invalid choice, running quick start example...")
         quick_start_example()

@@ -4,14 +4,14 @@ import pickle
 
 def aggregate_test(num_client,rd,test_data):
     with open(f"client_model/{rd}/logging.txt", 'a', encoding='utf-8') as f:
-        print(f"***下面是投票法的测试结果***", file=f)
+        print(f"*** Voting method test results ***", file=f)
     sum_probability = np.zeros((test_data.shape[0],test_data["condition"].nunique()),dtype=float)
     client_accuracies = {}
     X_test = test_data.loc[:, "U1":"U41"]
     Y_test = test_data["condition"]
 
     for i in range(0,num_client):
-        #估计每个client model的准确率
+        #Estimate accuracy for each client model
         client_model = pickle.load(open("client_model/"+str(rd)+"/client_"+str(i)+".pkl",
                                           'rb'))
 
@@ -21,7 +21,7 @@ def aggregate_test(num_client,rd,test_data):
         class_accuracies = client_model.type_score(X_test, Y_test)
         client_accuracies[f'Client_{i}'] = class_accuracies
 
-        #聚合结果
+        #Aggregate results
         a,b=client_model.predict(X_test)
         filtered_arr = b
         alpha = len(client_model.type)/test_data["condition"].nunique()
@@ -32,4 +32,4 @@ def aggregate_test(num_client,rd,test_data):
     true = list(Y_test)
 
     from exp.evaluation import evalute_accuracy
-    evalute_accuracy(result, true, label, rd, "平均聚合法")
+    evalute_accuracy(result, true, label, rd, "Average Aggregation")

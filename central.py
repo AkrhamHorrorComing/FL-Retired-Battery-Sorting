@@ -44,8 +44,8 @@ for random_seed in range(100):
 
     clf.fit(X_train_kernel_pca, y_train)
 
-    print(f"客户端 {random_seed} 模型在训练集准确率: {clf.score(X_train_kernel_pca, y_train)}")
-    print(f"客户端 {random_seed} 模型设置完成")
+    print(f"Client {random_seed} model training accuracy: {clf.score(X_train_kernel_pca, y_train)}")
+    print(f"Client {random_seed} model setup complete")
 
     X_test = test_data.loc[:, "U1":"U41"]
     y_test = test_data["condition"].map(mapping_dict)
@@ -56,9 +56,9 @@ for random_seed in range(100):
     true = test_data["condition"]
 
     from exp.evaluation import evalute_accuracy_for_central
-    evalute_accuracy_for_central(result, true, label, random_seed, "中央模型")
+    evalute_accuracy_for_central(result, true, label, random_seed, "Central Model")
 
-    print(f"客户端 {random_seed} 模型在测试集准确率: {clf.score(X_test_kernel_pca, y_test)}")
+    print(f"Client {random_seed} model test accuracy: {clf.score(X_test_kernel_pca, y_test)}")
 
     import pickle
     pickle.dump(clf, open(f"centralized_model/central_model_{random_seed}.pkl", "wb"))

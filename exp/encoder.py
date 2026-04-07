@@ -4,32 +4,32 @@ import torch.nn as nn
 class Autoencoder(nn.Module):
     def __init__(self, input_dim, hidden_dim):
         """
-        一个为OOD检测设计的、更简单的自编码器。
-        - 网络结构简化
-        - 移除了BatchNorm和Dropout以降低泛化能力
-        - 瓶颈层(hidden_dim)应该设置得较小
+        A simpler autoencoder designed for OOD detection.
+        - Simplified network structure
+        - Removed BatchNorm and Dropout to reduce generalization ability
+        - The bottleneck layer (hidden_dim) should be set to a small value
         """
         super(Autoencoder, self).__init__()
 
-        # 编码器
+        # Encoder
         self.encoder = nn.Sequential(
-            nn.Linear(input_dim, 32),  # 大幅减小隐藏层维度
-            nn.ReLU(inplace=True),  # 可以使用简单的ReLU或LeakyReLU
+            nn.Linear(input_dim, 32),  # Significantly reduced hidden layer dimension
+            nn.ReLU(inplace=True),  # Can use simple ReLU or LeakyReLU
             nn.Linear(32, 16),
             nn.ReLU(inplace=True),
-            nn.Linear(16, hidden_dim)  # 狭窄的瓶颈层
+            nn.Linear(16, hidden_dim)  # Narrow bottleneck layer
         )
 
-        # 解码器
+        # Decoder
         self.decoder = nn.Sequential(
             nn.Linear(hidden_dim, 16),
             nn.ReLU(inplace=True),
             nn.Linear(16, 32),
             nn.ReLU(inplace=True),
-            nn.Linear(32, input_dim)  # 输出层通常不加激活函数
+            nn.Linear(32, input_dim)  # Output layer typically has no activation function
         )
 
-        # 仍然可以使用好的权重初始化
+        # Good weight initialization can still be used
         self._initialize_weights()
 
     def _initialize_weights(self):

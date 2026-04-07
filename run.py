@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-联邦学习电池分类系统 - 主运行脚本
 Federated Learning Battery Classification System - Main Runner Script
 
-该脚本实现了完整的联邦学习流程，包括：
-1. 生成客户端模型
-2. 运行联邦学习实验
-3. 评估不同聚合方法的性能
-4. 生成实验结果报告
+This script implements the complete federated learning workflow, including:
+1. Generate client models
+2. Run federated learning experiments
+3. Evaluate performance of different aggregation methods
+4. Generate experiment result reports
 """
 
 import os
@@ -21,23 +20,23 @@ import dataset
 from dataset import generate_client_model
 import plot
 
-# 实验配置参数
+# Experiment configuration parameters
 MODEL_NAME = "MLP"
 NUM_CLIENT = 6
-NUM_EXPERIMENTS = 100  # 运行100次随机实验
-MINI_TYPE = 2  # 每个客户端最少电池类型数
-MAX_TYPE = 5  # 每个客户端最多电池类型数
-HIDDEN_DIM = 10  # 编码器隐藏层维度
+NUM_EXPERIMENTS = 100  # Run 100 random experiments
+MINI_TYPE = 2  # Minimum battery types per client
+MAX_TYPE = 5  # Maximum battery types per client
+HIDDEN_DIM = 10  # Encoder hidden layer dimension
 
 def setup_directories():
-    """创建必要的目录结构"""
+    """Create necessary directory structure"""
     directories = ["client_model", "data", "results", "plots"]
     for directory in directories:
         Path(directory).mkdir(exist_ok=True)
-    print("✅ 目录结构创建完成")
+    print("Directory structure created")
 
 def check_data_files():
-    """检查必要的数据文件是否存在"""
+    """Check if required data files exist"""
     required_files = ["data/test0.csv"]
     missing_files = []
 
@@ -46,19 +45,19 @@ def check_data_files():
             missing_files.append(file)
 
     if missing_files:
-        print(f"❌ 缺少必要的数据文件: {missing_files}")
-        print("请先运行 'python reat_dataset.py' 生成数据文件")
+        print(f"Missing required data files: {missing_files}")
+        print("Please run 'python reat_dataset.py' first to generate data files")
         return False
 
-    print("✅ 数据文件检查完成")
+    print("Data file check complete")
     return True
 
 def generate_client_models_if_needed(rd):
-    """如果客户端模型不存在，则生成它们"""
+    """Generate client models if they don't exist"""
     client_dir = f"client_model/{rd}"
 
     if not os.path.exists(client_dir):
-        print(f"🔄 为实验 {rd} 生成客户端模型...")
+        print(f"Generating client models for experiment {rd}...")
         generate_client_model(
             random_seed=rd,
             num_client=NUM_CLIENT,
@@ -67,38 +66,38 @@ def generate_client_models_if_needed(rd):
             model_type=MODEL_NAME,
             hidden_dim=HIDDEN_DIM
         )
-        print(f"✅ 实验 {rd} 的客户端模型生成完成")
+        print(f"Client models for experiment {rd} generated")
     else:
-        print(f"✅ 实验 {rd} 的客户端模型已存在")
+        print(f"Client models for experiment {rd} already exist")
 
 def load_client_models(rd):
-    """加载指定随机种子的所有客户端模型"""
+    """Load all client models for the specified random seed"""
     client_model_list = []
     client_accuracies = {}
 
-    # 加载测试数据
+    # Load test data
     test_data = pd.read_csv(f"data/test{rd}.csv", sep="\t")
     X_test = test_data.loc[:, "U1":"U41"]
     Y_test = test_data["condition"]
 
-    # 加载所有客户端模型
+    # Load all client models
     for i in range(NUM_CLIENT):
         client_path = f"client_model/{rd}/client_{i}.pkl"
         if os.path.exists(client_path):
             client = pickle.load(open(client_path, 'rb'))
             client_model_list.append(client)
 
-            # 评估客户端在测试集上的性能
+            # Evaluate client performance on test set
             client.test_score(X_test, Y_test)
             class_accuracies = client.type_score(X_test, Y_test)
             client_accuracies[f'Client_{i}'] = class_accuracies
         else:
-            print(f"⚠️  警告: 客户端模型文件不存在: {client_path}")
+            print(f"Warning: Client model file not found: {client_path}")
 
     return client_model_list, client_accuracies, X_test, Y_test, test_data
 
 def calculate_client_similarity(client_model_list):
-    """计算客户端之间的相似度（基于数据分布）"""
+    """Calculate similarity between clients (based on data distribution)"""
     similarity_scores = []
     model_i_list = []
     model_j_list = []
@@ -106,87 +105,87 @@ def calculate_client_similarity(client_model_list):
     for model_i, model_j in itertools.combinations(client_model_list, 2):
         model_i_list.append(model_i.client_id)
         model_j_list.append(model_j.client_id)
-        # 计算数据分布的相似度
+        # Calculate data distribution similarity
         similarity_score = np.dot(model_i.dataset_num_list, model_j.dataset_num_list.T)[0, 0]
         similarity_scores.append(similarity_score)
 
     return model_i_list, model_j_list, similarity_scores, np.mean(similarity_scores)
 
 def run_aggregation_methods(rd, test_data):
-    """运行不同的聚合方法并返回准确率"""
+    """Run different aggregation methods and return accuracy"""
     results = {}
 
     try:
-        # 1. 平均聚合 (Average Aggregation)
+        # 1. Average Aggregation
         from distance import aggregate_fed
         results['avg'] = aggregate_fed.aggregate_test(NUM_CLIENT, rd, test_data)
     except Exception as e:
-        print(f"⚠️  平均聚合失败: {e}")
+        print(f"Average aggregation failed: {e}")
         results['avg'] = 0.0
 
     try:
-        # 2. 投票聚合
+        # 2. Voting Aggregation
         from distance import aggregate_1
         results['voting'] = aggregate_1.aggregate_test(NUM_CLIENT, rd, test_data)
     except Exception as e:
-        print(f"⚠️  投票聚合失败: {e}")
+        print(f"Voting aggregation failed: {e}")
         results['voting'] = 0.0
 
     try:
-        # 3. 马氏距离加权聚合
+        # 3. Mahalanobis distance-weighted aggregation
         import distance.Ma_distance1
         results['ma_distance'] = distance.Ma_distance1.distance_weighted_test(
             rd, NUM_CLIENT, epsilon=5
         )
     except Exception as e:
-        print(f"⚠️  马氏距离加权聚合失败: {e}")
+        print(f"Mahalanobis distance-weighted aggregation failed: {e}")
         results['ma_distance'] = 0.0
 
     try:
-        # 4. 编码器加权聚合（softmax权重）
+        # 4. Encoder-weighted aggregation (softmax weights)
         import distance.novel_distance
         results['encoder_softmax'] = distance.novel_distance.encoder_weighted_test(
             rd, NUM_CLIENT, sum_weight=1
         )
     except Exception as e:
-        print(f"⚠️  编码器softmax加权聚合失败: {e}")
+        print(f"Encoder softmax-weighted aggregation failed: {e}")
         results['encoder_softmax'] = 0.0
 
     try:
-        # 5. 编码器加权聚合（argmax权重）
+        # 5. Encoder-weighted aggregation (argmax weights)
         import distance.novel_distance
         results['encoder_argmin'] = distance.novel_distance.encoder_weighted_test(
             rd, NUM_CLIENT, sum_weight=0
         )
     except Exception as e:
-        print(f"⚠️  编码器argmax加权聚合失败: {e}")
+        print(f"Encoder argmax-weighted aggregation failed: {e}")
         results['encoder_argmin'] = 0.0
 
     return results
 
 def run_single_experiment(rd):
-    """运行单个联邦学习实验"""
-    print(f"\n🎲 运行实验 {rd}/{NUM_EXPERIMENTS}")
+    """Run a single federated learning experiment"""
+    print(f"\nRunning experiment {rd}/{NUM_EXPERIMENTS}")
     print("-" * 50)
 
-    # 生成客户端模型（如果需要）
+    # Generate client models (if needed)
     generate_client_models_if_needed(rd)
 
-    # 加载客户端模型
+    # Load client models
     client_model_list, client_accuracies, X_test, Y_test, test_data = load_client_models(rd)
 
     if not client_model_list:
-        print(f"❌ 实验 {rd}: 没有找到有效的客户端模型，跳过")
+        print(f"Experiment {rd}: No valid client models found, skipping")
         return None
 
-    print(f"✅ 成功加载 {len(client_model_list)} 个客户端模型")
+    print(f"Successfully loaded {len(client_model_list)} client models")
 
-    # 计算客户端相似度
+    # Calculate client similarity
     if len(client_model_list) >= 2:
         model_i_list, model_j_list, similarity_scores, avg_similarity = calculate_client_similarity(client_model_list)
-        print(f"📊 客户端平均相似度: {avg_similarity:.4f}")
+        print(f"Average client similarity: {avg_similarity:.4f}")
 
-        # 生成相似度热力图
+        # Generate similarity heatmap
         plot.similarity_heatmap(
             model_i_list, model_j_list, similarity_scores,
             f"client_model/{rd}/similarity_heatmap"
@@ -194,19 +193,19 @@ def run_single_experiment(rd):
     else:
         avg_similarity = 0.0
 
-    # 绘制客户端类型准确率
+    # Plot client type accuracy
     if client_accuracies:
         client_model_list[0].plot_type_accuracy(client_accuracies, save_path=f"client_model/{rd}/type_accuracy")
 
-    # 运行聚合方法
-    print("🔄 运行聚合方法...")
+    # Run aggregation methods
+    print("Running aggregation methods...")
     aggregation_results = run_aggregation_methods(rd, test_data)
 
-    print("📊 本实验结果:")
+    print("Experiment results:")
     for method, accuracy in aggregation_results.items():
         print(f"   {method}: {accuracy:.4f}")
 
-    # 返回结果
+    # Return results
     result = {
         'rd': rd,
         'similarity': avg_similarity,
@@ -216,30 +215,30 @@ def run_single_experiment(rd):
     return result
 
 def save_results(results_df, filename="results/federated_learning_results.csv"):
-    """保存实验结果到CSV文件"""
+    """Save experiment results to CSV file"""
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     results_df.to_csv(filename, index=False, sep="\t")
-    print(f"✅ 结果已保存到: {filename}")
+    print(f"Results saved to: {filename}")
 
 def generate_summary_report(results_df):
-    """生成汇总报告"""
+    """Generate summary report"""
     if results_df.empty:
-        print("❌ 没有实验结果可汇总")
+        print("No experiment results to summarize")
         return
 
-    print("\n📋 实验汇总报告")
+    print("\nExperiment Summary Report")
     print("=" * 50)
 
-    # 计算各方法的平均准确率和标准差
+    # Calculate mean accuracy and std for each method
     methods = ['avg', 'voting', 'ma_distance', 'encoder_softmax', 'encoder_argmin']
 
     for method in methods:
         if method in results_df.columns:
             mean_acc = results_df[method].mean()
             std_acc = results_df[method].std()
-            print(f"{method:20}: {mean_acc:.4f} ± {std_acc:.4f}")
+            print(f"{method:20}: {mean_acc:.4f} +/- {std_acc:.4f}")
 
-    # 找到最佳方法
+    # Find the best method
     method_means = {}
     for method in methods:
         if method in results_df.columns:
@@ -247,33 +246,33 @@ def generate_summary_report(results_df):
 
     if method_means:
         best_method = max(method_means.items(), key=lambda x: x[1])
-        print(f"\n🏆 最佳聚合方法: {best_method[0]} (平均准确率: {best_method[1]:.4f})")
+        print(f"\nBest aggregation method: {best_method[0]} (mean accuracy: {best_method[1]:.4f})")
 
 def main():
-    """主函数：运行联邦学习实验"""
-    print("🚀 联邦学习电池分类系统")
+    """Main function: run federated learning experiments"""
+    print("Federated Learning Battery Classification System")
     print("=" * 50)
-    print(f"实验配置:")
-    print(f"  模型类型: {MODEL_NAME}")
-    print(f"  客户端数量: {NUM_CLIENT}")
-    print(f"  实验次数: {NUM_EXPERIMENTS}")
-    print(f"  电池类型范围: {MINI_TYPE}-{MAX_TYPE}")
-    print(f"  隐藏层维度: {HIDDEN_DIM}")
+    print(f"Experiment configuration:")
+    print(f"  Model type: {MODEL_NAME}")
+    print(f"  Number of clients: {NUM_CLIENT}")
+    print(f"  Number of experiments: {NUM_EXPERIMENTS}")
+    print(f"  Battery type range: {MINI_TYPE}-{MAX_TYPE}")
+    print(f"  Hidden layer dimension: {HIDDEN_DIM}")
     print("-" * 50)
 
-    # 设置目录结构
+    # Set up directory structure
     setup_directories()
 
-    # 检查数据文件
+    # Check data files
     if not check_data_files():
         return
 
-    # 询问用户是否要生成新的客户端模型
-    user_input = input("\n是否要生成新的客户端模型？(y/n): ").strip().lower()
+    # Ask user whether to generate new client models
+    user_input = input("\nGenerate new client models? (y/n): ").strip().lower()
     if user_input == 'y':
-        print("🔄 开始生成客户端模型...")
+        print("Starting client model generation...")
         for rd in range(NUM_EXPERIMENTS):
-            print(f"生成实验 {rd} 的客户端模型...")
+            print(f"Generating client models for experiment {rd}...")
             generate_client_model(
                 random_seed=rd,
                 num_client=NUM_CLIENT,
@@ -282,9 +281,9 @@ def main():
                 model_type=MODEL_NAME,
                 hidden_dim=HIDDEN_DIM
             )
-        print("✅ 所有客户端模型生成完成")
+        print("All client models generated")
 
-    # 运行实验
+    # Run experiments
     results = []
 
     try:
@@ -294,34 +293,28 @@ def main():
                 results.append(result)
 
     except KeyboardInterrupt:
-        print("\n⚠️  实验被用户中断")
+        print("\nExperiment interrupted by user")
 
     except Exception as e:
-        print(f"\n❌ 实验过程中发生错误: {e}")
+        print(f"\nError during experiment: {e}")
 
-    # 保存结果
+    # Save results
     if results:
         results_df = pd.DataFrame(results)
         save_results(results_df)
         generate_summary_report(results_df)
 
-        # 生成可视化图表
-        print("\n📊 生成可视化图表...")
+        # Generate visualization charts
+        print("\nGenerating visualization charts...")
         try:
-            # 这里可以添加更多的可视化代码
+            # More visualization code can be added here
             plot.plot(num_client=NUM_CLIENT, random_seed=0)
-            print("✅ 可视化图表生成完成")
+            print("Visualization charts generated")
         except Exception as e:
-            print(f"⚠️  可视化图表生成失败: {e}")
+            print(f"Visualization chart generation failed: {e}")
 
-    print("\n🎉 联邦学习实验完成！")
-    print(f"📁 结果保存在: results/federated_learning_results.csv")
+    print("\nFederated learning experiments complete!")
+    print(f"Results saved at: results/federated_learning_results.csv")
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-

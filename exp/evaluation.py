@@ -9,7 +9,7 @@ def evalute_accuracy(result, true, label, rd, name):
         if true[i] == label[i]:
             correct += 1
     with open(f"client_model/{rd}/logging.txt", 'a', encoding='utf-8') as f:
-        print(f"🚀  {name} Accuracy: {correct / len(true)}", file=f)
+        print(f"  {name} Accuracy: {correct / len(true)}", file=f)
 
     dict = {}
     for i in sorted(list(np.unique(true))):
@@ -27,11 +27,11 @@ def evalute_accuracy(result, true, label, rd, name):
     true_labels_str = true
     pred_labels_str = label
 
-    # 获取所有唯一类别名称，确保顺序一致
+    # Get all unique class names, ensuring consistent ordering
     unique_labels_str = sorted(list(np.unique(true_labels_str)))
 
-    # 1. 计算 Precision, Recall, F1-Score
-    #    classification_report 直接生成包含这些指标的文本报告
+    # 1. Calculate Precision, Recall, F1-Score
+    #    classification_report directly generates a text report containing these metrics
     from sklearn.metrics import classification_report, confusion_matrix
     report = classification_report(true_labels_str, pred_labels_str, labels=unique_labels_str, digits=4)
 
@@ -44,36 +44,36 @@ def evalute_accuracy(result, true, label, rd, name):
     dataframe = pd.DataFrame(matrix)
     dataframe.to_csv(f"10_27/{rd}/{name}_report.csv", index=True, header=True, sep="\t")
 
-    # 2. 计算混淆矩阵
-    #    混淆矩阵显示了模型将每个真实类别预测为各个类别的次数
+    # 2. Calculate confusion matrix
+    #    The confusion matrix shows how many times the model predicted each class for each true class
     cm = confusion_matrix(true_labels_str, pred_labels_str, labels=unique_labels_str)
 
     import matplotlib.pyplot as plt
     import seaborn as sns
     plt.rcParams['font.serif'] = ['Times New Roman']
-    plt.figure(figsize=(8,6))  # 您可以根据类别数量调整大小
+    plt.figure(figsize=(8,6))  # You can adjust the size based on the number of classes
     sns.heatmap(cm,
-                annot=True,  # 在单元格中显示数值
-                fmt="d",  # 将数值格式化为整数 ("d")
-                cmap="Blues",  # 选择颜色映射 (例如: 'Blues', 'viridis', 'YlGnBu')
-                xticklabels=unique_labels_str,  # 设置 x 轴刻度标签
-                yticklabels=unique_labels_str,  # 设置 y 轴刻度标签
-                linewidths=.5,  # 在单元格之间添加细线
-                cbar=False  # 显示颜色条
+                annot=True,  # Display values in cells
+                fmt="d",  # Format values as integers ("d")
+                cmap="Blues",  # Choose color map (e.g.: 'Blues', 'viridis', 'YlGnBu')
+                xticklabels=unique_labels_str,  # Set x-axis tick labels
+                yticklabels=unique_labels_str,  # Set y-axis tick labels
+                linewidths=.5,  # Add thin lines between cells
+                cbar=False  # Show color bar
                 )
     plt.ylabel('True Label')
     plt.xlabel('Predicted Label')
-    plt.xticks(rotation=45, ha='right')  # 让 x 轴标签倾斜 45 度
-    plt.yticks(rotation=0)  # y 轴标签保持水平
+    plt.xticks(rotation=45, ha='right')  # Tilt x-axis labels 45 degrees
+    plt.yticks(rotation=0)  # Keep y-axis labels horizontal
     plt.tight_layout()
     plt.savefig(f"client_model/{rd}/confusion_matrix.png", dpi=800, bbox_inches='tight')
     plt.close()
 
-    # (可选) 使用 pandas 美化混淆矩阵的打印
+    # (Optional) Use pandas to pretty-print the confusion matrix
     cm_df = pd.DataFrame(cm, index=unique_labels_str, columns=unique_labels_str)
 
     with open(f"client_model/{rd}/logging.txt", 'a', encoding='utf-8') as f:
-        print(f"\nConfusion Matrix:\n{cm_df.to_string()}", file=f)  # 使用 to_string() 保证完整打印
+        print(f"\nConfusion Matrix:\n{cm_df.to_string()}", file=f)  # Use to_string() to ensure complete printing
 
     with open(f"client_model/{rd}/logging.txt", 'a', encoding='utf-8') as f:
         print(f"\n\n", file=f)
@@ -88,7 +88,7 @@ def evalute_accuracy_for_central(result, true, label, rd, name):
         if true[i] == label[i]:
             correct += 1
     with open(f"centralized_model/{rd}_logging.txt", 'a', encoding='utf-8') as f:
-        print(f"🚀  {name} Accuracy: {correct / len(true)}", file=f)
+        print(f"  {name} Accuracy: {correct / len(true)}", file=f)
 
     dict = {}
     for i in sorted(list(np.unique(true))):
@@ -106,11 +106,11 @@ def evalute_accuracy_for_central(result, true, label, rd, name):
     true_labels_str = true
     pred_labels_str = label
 
-    # 获取所有唯一类别名称，确保顺序一致
+    # Get all unique class names, ensuring consistent ordering
     unique_labels_str = sorted(list(np.unique(true_labels_str)))
 
-    # 1. 计算 Precision, Recall, F1-Score
-    #    classification_report 直接生成包含这些指标的文本报告
+    # 1. Calculate Precision, Recall, F1-Score
+    #    classification_report directly generates a text report containing these metrics
     from sklearn.metrics import classification_report, confusion_matrix
     report = classification_report(true_labels_str,
                                    pred_labels_str,
@@ -135,28 +135,28 @@ def evalute_accuracy_for_central(result, true, label, rd, name):
     import seaborn as sns
     plt.rcParams['font.serif'] = ['Times New Roman']
     import os
-    plt.figure(figsize=(6, 4))  # 您可以根据类别数量调整大小
+    plt.figure(figsize=(6, 4))  # You can adjust the size based on the number of classes
     sns.heatmap(cm,
-                annot=True,  # 在单元格中显示数值
-                fmt="d",  # 将数值格式化为整数 ("d")
-                cmap="Blues",  # 选择颜色映射 (例如: 'Blues', 'viridis', 'YlGnBu')
-                xticklabels=unique_labels_str,  # 设置 x 轴刻度标签
-                yticklabels=unique_labels_str,  # 设置 y 轴刻度标签
-                linewidths=.5,  # 在单元格之间添加细线
-                cbar=False  # 显示颜色条
+                annot=True,  # Display values in cells
+                fmt="d",  # Format values as integers ("d")
+                cmap="Blues",  # Choose color map (e.g.: 'Blues', 'viridis', 'YlGnBu')
+                xticklabels=unique_labels_str,  # Set x-axis tick labels
+                yticklabels=unique_labels_str,  # Set y-axis tick labels
+                linewidths=.5,  # Add thin lines between cells
+                cbar=False  # Show color bar
                 )
     plt.ylabel('True Label')
     plt.xlabel('Predicted Label')
-    plt.xticks(rotation=45, ha='right')  # 让 x 轴标签倾斜 45 度
-    plt.yticks(rotation=0)  # y 轴标签保持水平
+    plt.xticks(rotation=45, ha='right')  # Tilt x-axis labels 45 degrees
+    plt.yticks(rotation=0)  # Keep y-axis labels horizontal
     plt.tight_layout()
     plt.savefig(f"centralized_model/{rd}_confusion_matrix.png", dpi=800, bbox_inches='tight')
     plt.close()
 
-    # (可选) 使用 pandas 美化混淆矩阵的打印
+    # (Optional) Use pandas to pretty-print the confusion matrix
     cm_df = pd.DataFrame(cm, index=unique_labels_str, columns=unique_labels_str)
 
     with open(f"centralized_model/{rd}_logging.txt", 'a', encoding='utf-8') as f:
-        print(f"\nConfusion Matrix:\n{cm_df.to_string()}", file=f)  # 使用 to_string() 保证完整打印
+        print(f"\nConfusion Matrix:\n{cm_df.to_string()}", file=f)  # Use to_string() to ensure complete printing
 
 

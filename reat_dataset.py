@@ -4,7 +4,7 @@ import pandas as pd
 import ast
 def read_data(random_seed=42):
     df = pd.read_csv("split_dataset//"+str(random_seed)+".csv",sep="\t")
-    df["train"] = df["train"].apply(ast.literal_eval)  # 安全的方式
+    df["train"] = df["train"].apply(ast.literal_eval)  # Safe conversion method
     df["test"] = df["test"].apply(ast.literal_eval)
     data_all = pd.read_csv('mat_data.csv',sep="\t",index_col=0)
 
@@ -25,3 +25,5 @@ def read_data(random_seed=42):
         else:
             data_test = data[data["No."].isin(df[df["name"] == conditon]["test"].values[0])]
             data_test.to_csv("data\\test"+str(random_seed)+".csv",index=False,sep="\t",header=None,mode="a")
+
+read_data()
